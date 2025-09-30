@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html class= "home" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Audio Scroller</title>
+</head>
+<body>
+    <h1>Music Player</h1>
+
+    <div class="audio-container" id="music-container">
+        <div class="audio-info">
+            <div class="progress-container" id="progress-container">
+                <div class="progress" id="progress"></div>
+            </div>
+        </div>
+
+        <audio id="audio" src="mp3s/selectedpoems_01_furlong_64kb.mp3"></audio>
+
+        <div class="speed-control">
+            <label for="speedSlider">Speed: <span id="currentSpeed">1.0x</span></label>
+            <input type="range" id="speedSlider" min="0.5" max="2" value="1" step="0.1">
+        </div>
+
+        <div class="navigation">
+            <button id="play" class="action-btn action-btn-big">
+                Play<i class="fas fa-play"></i>
+            </button>
+        </div>
+    </div>
+
+<script src="script.js"></script>
+</body>
+</html>
