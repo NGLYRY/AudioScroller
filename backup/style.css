@@ -1,5 +1,5 @@
 .progress-container {
-  background: #ffbfbf;
+  background: #fff;
   border-radius: 5px;
   cursor: pointer;
   margin: 10px 0;
@@ -8,7 +8,7 @@
 }
 
 .progress {
-  background-color: #3249b1;
+  background-color: #fe8daa;
   border-radius: 5px;
   height: 100%;
   width: 0%;
