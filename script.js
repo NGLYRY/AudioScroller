@@ -119,8 +119,28 @@ function DurTime (e) {
 audio.playbackRate = parseFloat(speedSlider.value);
 currentSpeed.textContent = `${speedSlider.value}x`;
 
-// Add event listener for slider changes
+// Debounce function to prevent rapid changes
+let speedTimeout;
+
+// Add event listener for slider changes with debouncing
 speedSlider.addEventListener('input', () => {
+    const newSpeed = parseFloat(speedSlider.value);
+    
+    // Update display immediately for smooth UI feedback
+    currentSpeed.textContent = `${newSpeed.toFixed(1)}x`;
+    
+    // Clear previous timeout
+    clearTimeout(speedTimeout);
+    
+    // Set new timeout to update playback rate after user stops dragging
+    speedTimeout = setTimeout(() => {
+        audio.playbackRate = newSpeed;
+    }, 100); // 100ms delay
+});
+
+// Also handle when user releases the slider (for immediate response)
+speedSlider.addEventListener('change', () => {
+    clearTimeout(speedTimeout);
     const newSpeed = parseFloat(speedSlider.value);
     audio.playbackRate = newSpeed;
     currentSpeed.textContent = `${newSpeed.toFixed(1)}x`;
@@ -137,7 +157,7 @@ playBtn.addEventListener('click', () => {
   }
 });
 
-audio.playbackRate = speed;
+// audio.playbackRate = speed;
 
 // Time/song update
 audio.addEventListener('timeupdate', updateProgress);
