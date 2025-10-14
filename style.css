@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css?family=Lato&display=swap');
+
+
 .progress-container {
   background: #ffbfbf;
   border-radius: 5px;
@@ -13,4 +16,30 @@
   height: 100%;
   width: 0%;
   transition: width 0.1s linear;
+}
+
+.navigation {
+  /* height: 100vh; */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.action-btn {
+  background-color: #edb2b2;
+  border: 0;
+  color: #000000;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 10px;
+  margin: 0 20px;
+}
+
+.action-btn.action-btn-big {
+  color: #000000;
+  font-size: 30px;
+}
+
+.action-btn:focus {
+  outline: 0;
 }

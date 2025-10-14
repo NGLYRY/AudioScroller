@@ -1,9 +1,17 @@
+console.log("script.js works hooray!");
+
 const musicContainer = document.getElementById('music-container')
 const playBtn = document.getElementById('play')
+const replaySecondBtn = document.getElementById('replaySecond')
 
 const audio = document.getElementById('audio')
 const speedSlider = document.getElementById('speedSlider');
 const currentSpeed = document.getElementById('currentSpeed');
+
+let audioContext;
+let audioSource;
+let gainNode;
+let isWebAudioConnected = false;
 
 let speed = 1.0; // Default speed
 const progress = document.getElementById('progress')
@@ -17,6 +25,40 @@ const songs = ['selectedpoems_01_furlong_64kb', 'selectedpoems_02_furlong_64kb',
 // Keep track of song
 let songIndex = 2;
 
+// Variable to track if we're in replay mode
+let isReplayingSecond = false;
+let replayTimeout;
+
+// Initialize Web Audio API
+function initWebAudio() {
+    try {
+        // Create AudioContext
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Create gain node for volume control
+        gainNode = audioContext.createGain();
+        
+        // Connect audio element to Web Audio API
+        if (!isWebAudioConnected) {
+            audioSource = audioContext.createMediaElementSource(audio);
+            audioSource.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            isWebAudioConnected = true;
+        }
+        
+        console.log('Web Audio API initialized successfully');
+    } catch (error) {
+        console.error('Web Audio API not supported:', error);
+    }
+}
+
+// Resume AudioContext (required for some browsers)
+function resumeAudioContext() {
+    if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+}
+
 // Initially load song details into DOM
 loadSong(songs[songIndex]);
 
@@ -25,11 +67,21 @@ function loadSong(song) {
 }
 
 function playSong() {
-  musicContainer.classList.add('play');
-  playBtn.querySelector('i.fas').classList.remove('fa-play');
-  playBtn.querySelector('i.fas').classList.add('fa-pause');
+    // Initialize Web Audio API if not already done
+    if (!audioContext) {
+        initWebAudio();
+    }
+    
+    // Resume audio context if suspended
+    resumeAudioContext();
+    
+    musicContainer.classList.add('play');
+    playBtn.querySelector('i.fas').classList.remove('fa-play');
+    playBtn.querySelector('i.fas').classList.add('fa-pause');
 
-  audio.play();
+    playBtn.childNodes[0].textContent = 'Pause';
+
+    audio.play();
 }
 
 function pauseSong() {
@@ -37,7 +89,48 @@ function pauseSong() {
   playBtn.querySelector('i.fas').classList.add('fa-play');
   playBtn.querySelector('i.fas').classList.remove('fa-pause');
 
+  // Change button text
+  playBtn.childNodes[0].textContent = 'Play';
+
   audio.pause();
+}
+
+// New function to replay last second
+function replayLastSecond() {
+    const currentTime = audio.currentTime;
+    const replayStartTime = Math.max(0, currentTime - 1); // Don't go below 0
+    const wasPlaying = !audio.paused;
+    
+    // Clear any existing replay timeout
+    clearTimeout(replayTimeout);
+    
+    // Set the flag to indicate we're replaying
+    isReplayingSecond = true;
+    
+    // Jump back 1 second
+    audio.currentTime = replayStartTime;
+    
+    // Start playing from that point
+    if (!wasPlaying) {
+        playSong();
+    }
+    
+    // Set timeout to pause after 1 second (or less if near beginning)
+    const replayDuration = Math.min(1000, (currentTime - replayStartTime) * 1000);
+    
+    replayTimeout = setTimeout(() => {
+        // If it wasn't playing before, pause it after the replay
+        if (!wasPlaying) {
+            pauseSong();
+        }
+        // Reset the flag
+        isReplayingSecond = false;
+        
+        // If it was playing, continue from where we would have been
+        if (wasPlaying) {
+            audio.currentTime = currentTime;
+        }
+    }, replayDuration);
 }
 
 function updateProgress(e) {
@@ -157,6 +250,9 @@ playBtn.addEventListener('click', () => {
   }
 });
 
+// Add event listener for replay button
+replaySecondBtn.addEventListener('click', replayLastSecond);
+
 // audio.playbackRate = speed;
 
 // Time/song update
@@ -165,6 +261,8 @@ audio.addEventListener('timeupdate', updateProgress);
 // Click on progress bar
 progressContainer.addEventListener('click', setProgress);
 
+audio.addEventListener('ended', pauseSong);
+
 // Time of song
-audio.addEventListener('timeupdate',DurTime);
+audio.addEventListener('timeupdate', DurTime);
 
