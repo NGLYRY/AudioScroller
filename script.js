@@ -297,3 +297,12 @@ function handleFirstInteraction() {
 document.addEventListener('click', handleFirstInteraction);
 document.addEventListener('keydown', handleFirstInteraction);
 
+// Add debugging information
+console.log('Current protocol:', window.location.protocol);
+console.log('AudioContext support:', !!(window.AudioContext || window.webkitAudioContext));
+
+// Check if running on GitHub Pages
+if (window.location.hostname.includes('github.io')) {
+    console.log('Running on GitHub Pages');
+}
+
