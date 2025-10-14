@@ -32,14 +32,18 @@ let replayTimeout;
 // Initialize Web Audio API
 function initWebAudio() {
     try {
-        // Create AudioContext
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // Create AudioContext only after user interaction
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
         
         // Create gain node for volume control
-        gainNode = audioContext.createGain();
+        if (!gainNode) {
+            gainNode = audioContext.createGain();
+        }
         
         // Connect audio element to Web Audio API
-        if (!isWebAudioConnected) {
+        if (!isWebAudioConnected && audio) {
             audioSource = audioContext.createMediaElementSource(audio);
             audioSource.connect(gainNode);
             gainNode.connect(audioContext.destination);
@@ -47,15 +51,22 @@ function initWebAudio() {
         }
         
         console.log('Web Audio API initialized successfully');
+        return true;
     } catch (error) {
         console.error('Web Audio API not supported:', error);
+        return false;
     }
 }
 
 // Resume AudioContext (required for some browsers)
-function resumeAudioContext() {
+async function resumeAudioContext() {
     if (audioContext && audioContext.state === 'suspended') {
-        audioContext.resume();
+        try {
+            await audioContext.resume();
+            console.log('AudioContext resumed');
+        } catch (error) {
+            console.error('Failed to resume AudioContext:', error);
+        }
     }
 }
 
@@ -66,14 +77,17 @@ function loadSong(song) {
   audio.src = `mp3s/${song}.mp3`;
 }
 
-function playSong() {
-    // Initialize Web Audio API if not already done
+async function playSong() {
+    // Initialize Web Audio API on first user interaction
     if (!audioContext) {
-        initWebAudio();
+        const success = initWebAudio();
+        if (!success) {
+            console.warn('Web Audio API failed to initialize, falling back to basic audio');
+        }
     }
     
     // Resume audio context if suspended
-    resumeAudioContext();
+    await resumeAudioContext();
     
     musicContainer.classList.add('play');
     playBtn.querySelector('i.fas').classList.remove('fa-play');
@@ -81,7 +95,11 @@ function playSong() {
 
     playBtn.childNodes[0].textContent = 'Pause';
 
-    audio.play();
+    try {
+        await audio.play();
+    } catch (error) {
+        console.error('Failed to play audio:', error);
+    }
 }
 
 function pauseSong() {
@@ -95,16 +113,15 @@ function pauseSong() {
   audio.pause();
 }
 
-// New function to replay last second
+
 function replayLastSecond() {
     const currentTime = audio.currentTime;
-    const replayStartTime = Math.max(0, currentTime - 1); // Don't go below 0
+    const replayStartTime = Math.max(0, currentTime - 1); 
     const wasPlaying = !audio.paused;
     
-    // Clear any existing replay timeout
     clearTimeout(replayTimeout);
     
-    // Set the flag to indicate we're replaying
+ 
     isReplayingSecond = true;
     
     // Jump back 1 second
@@ -265,4 +282,18 @@ audio.addEventListener('ended', pauseSong);
 
 // Time of song
 audio.addEventListener('timeupdate', DurTime);
+
+// Add this function to handle initial user interaction
+function handleFirstInteraction() {
+    if (!audioContext) {
+        initWebAudio();
+    }
+    // Remove the event listeners after first interaction
+    document.removeEventListener('click', handleFirstInteraction);
+    document.removeEventListener('keydown', handleFirstInteraction);
+}
+
+// Add event listeners for first user interaction
+document.addEventListener('click', handleFirstInteraction);
+document.addEventListener('keydown', handleFirstInteraction);
 
