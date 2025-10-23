@@ -39,7 +39,7 @@ const BackwardConfig = {
     MAX_SPEED: 4.0,
     SEGMENT_DURATION_SEC: 2,
     SEGMENT_INTERVAL_MS: 1500,
-    SEGMENT_STEP_SEC: 2,
+    SEGMENT_STEP_SEC: 1.5,
     MAX_ACTIVE_SOURCES: 3
 };
 
