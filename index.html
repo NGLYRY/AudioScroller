@@ -14,13 +14,24 @@
             <div class="progress-container" id="progress-container">
                 <div class="progress" id="progress"></div>
             </div>
+            <div class="time-display">
+                <span id="currTime">0:00</span> / <span id="durTime">0:00</span>
+            </div>
         </div>
 
-        <audio id="audio" src="mp3s/selectedpoems_01_furlong_64kb.mp3" ></audio>
+        <audio id="audio" src="mp3s/selectedpoems_01_furlong_64kb.mp3"></audio>
+
+        <!-- <audio id="repeat" src="mp3s/selectedpoems_01_furlong_64kb.mp3" loop controls></audio> -->
+
 
         <div class="speed-control">
             <label for="speedSlider">Speed: <span id="currentSpeed">1.0x</span></label>
-            <input type="range" id="speedSlider" min="0.5" max="2" value="1" step="0.1">
+            <input type="range" id="speedSlider" min="0.5" max="2" value="1.0" step="0.1">
+        </div>
+
+        <div class="backward-control">
+            <label for="maxSourcesInput">Max Active Sources: <span id="currentMaxSources">2</span></label>
+            <input type="number" id="maxSourcesInput" min="1" max="10" value="2" step="1">
         </div>
 
         <div class="navigation">
@@ -28,11 +39,19 @@
                 Play<i class="fas fa-play"></i>
             </button>
             <button id="replaySecond" class="action-btn">
-                ↺ Replay 1s
+                Replay 1s
             </button>
+            <button id="backward" title="Backward Playback" class="action-btn">Backward</button>
         </div>
     </div>
 
-<script src="script.js">_</script>
+    <div class="guide">
+        <h2>User Manual</h2>
+        The pink progress bar can be pressed and used to navigate the audio. When clicking on it starts playing the audio file.
+        The backward button currently rolls back the progress bar by 1 second at a time, replays the last second of the audio file 
+        with overlap of active sources.
+    </div>
+
+<script src="script.js"></script>
 </body>
 </html>
