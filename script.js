@@ -68,7 +68,7 @@ function getBackwardParams() {
 // Function to calculate backward speed
 function calculateBackwardSpeed() {
     const params = getBackwardParams();
-    return (params.step / (params.period / 1000)).toFixed(1);
+    return (params.step / (params.period / 1000)).toFixed(2);
 }
 
 // Function to update parameter displays
