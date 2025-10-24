@@ -11,6 +11,15 @@ const currentSpeed = document.getElementById('currentSpeed');
 const maxSourcesInput = document.getElementById('maxSourcesInput');
 const currentMaxSources = document.getElementById('currentMaxSources');
 
+// Backward parameters controls
+const segmentLengthInput = document.getElementById('segmentLengthInput');
+const currentSegmentLength = document.getElementById('currentSegmentLength');
+const periodInput = document.getElementById('periodInput');
+const currentPeriod = document.getElementById('currentPeriod');
+const stepInput = document.getElementById('stepInput');
+const currentStep = document.getElementById('currentStep');
+const backwardSpeed = document.getElementById('backwardSpeed');
+
 let audioContext;
 let audioSource;
 let gainNode;
@@ -37,11 +46,83 @@ let replayTimeout;
 const BackwardConfig = {
     MIN_SPEED: 0.1,
     MAX_SPEED: 4.0,
-    SEGMENT_DURATION_SEC: 2,
-    SEGMENT_INTERVAL_MS: 1500,
-    SEGMENT_STEP_SEC: 1.5,
     MAX_ACTIVE_SOURCES: 3
 };
+
+// Dynamic backward parameters
+let dynamicBackwardParams = {
+    segmentDuration: 2.0,
+    period: 1500,
+    step: 1.5
+};
+
+// Function to get current backward parameters
+function getBackwardParams() {
+    return {
+        segmentDuration: parseFloat(segmentLengthInput.value),
+        period: parseInt(periodInput.value),
+        step: parseFloat(stepInput.value)
+    };
+}
+
+// Function to calculate backward speed
+function calculateBackwardSpeed() {
+    const params = getBackwardParams();
+    return (params.step / (params.period / 1000)).toFixed(1);
+}
+
+// Function to update parameter displays
+function updateParameterDisplays() {
+    const params = getBackwardParams();
+    currentSegmentLength.textContent = params.segmentDuration.toFixed(1);
+    currentPeriod.textContent = params.period;
+    currentStep.textContent = params.step.toFixed(1);
+    backwardSpeed.textContent = calculateBackwardSpeed() + 'x';
+    
+    // Update dynamic parameters
+    dynamicBackwardParams = params;
+}
+
+// Function to handle speed changes (positive and negative)
+function handleSpeedChange(newSpeed) {
+    if (newSpeed < 0) {
+        // Negative speed - enter backward mode
+        console.log('Negative speed detected:', newSpeed.toFixed(1), '- entering backward mode');
+        
+        // Calculate backward period based on speed
+        // Formula: period = step / abs(speed)
+        // For example: -1.0x speed with 1.5s step = 1500ms period
+        const backwardPeriod = Math.round((dynamicBackwardParams.step / Math.abs(newSpeed)) * 1000);
+        
+        console.log('Calculated backward period:', backwardPeriod, 'ms');
+        
+        // Update the period input and display
+        periodInput.value = backwardPeriod;
+        updateParameterDisplays();
+        
+        // Exit backward mode if already in it, then enter with new parameters
+        if (backwardMode) {
+            exitBackwardMode();
+        }
+        
+        // Enter backward mode with the calculated period
+        setTimeout(() => {
+            enterBackwardMode();
+        }, 100);
+        
+    } else {
+        // Positive speed - normal forward playback
+        console.log('Positive speed detected:', newSpeed.toFixed(1), '- using normal playback');
+        
+        // Exit backward mode if active
+        if (backwardMode) {
+            exitBackwardMode();
+        }
+        
+        // Set normal playback rate
+        audio.playbackRate = newSpeed;
+    }
+}
 
 // Backward playback state
 let accumulatedScroll = 0.0;
@@ -194,9 +275,9 @@ function playBackwardSegment(endPosition) {
         return false;
     }
     
-    // Calculate segment boundaries
+    // Calculate segment boundaries using dynamic parameters
     const segmentEnd = Math.min(audioBuffer.duration, Math.max(0, endPosition));
-    const segmentStart = Math.max(0, segmentEnd - BackwardConfig.SEGMENT_DURATION_SEC);
+    const segmentStart = Math.max(0, segmentEnd - dynamicBackwardParams.segmentDuration);
     const segmentDuration = segmentEnd - segmentStart;
     
     console.log(`Segment: ${segmentStart.toFixed(2)}s to ${segmentEnd.toFixed(2)}s (${segmentDuration.toFixed(2)}s)`);
@@ -255,8 +336,8 @@ function startBackwardMode() {
         return false;
     }
     
-    // Set up timer to play segments at regular intervals
-    console.log('Setting up interval timer for segments every', BackwardConfig.SEGMENT_INTERVAL_MS, 'ms');
+    // Set up timer to play segments at regular intervals using dynamic parameters
+    console.log('Setting up interval timer for segments every', dynamicBackwardParams.period, 'ms');
     backwardTimer = setInterval(() => {
         // Only add new segments if we're still in backward mode and not paused
         if (!backwardMode) {
@@ -271,15 +352,15 @@ function startBackwardMode() {
             return;
         }
         
-        // Step backward for the next segment
-        virtualPosition = Math.max(0, virtualPosition - BackwardConfig.SEGMENT_STEP_SEC);
+        // Step backward for the next segment using dynamic step size
+        virtualPosition = Math.max(0, virtualPosition - dynamicBackwardParams.step);
         
         console.log('Timer triggered: playing segment at position', virtualPosition.toFixed(2));
         playBackwardSegment(virtualPosition);
         
         // Update progress display
         updateProgressDisplay();
-    }, BackwardConfig.SEGMENT_INTERVAL_MS);
+    }, dynamicBackwardParams.period);
     
     console.log('Backward mode started successfully');
     return true;
@@ -386,8 +467,15 @@ function exitBackwardMode() {
 function toggleBackwardMode() {
     if (backwardMode) {
         exitBackwardMode();
+        // Reset speed slider to positive value when exiting backward mode
+        speedSlider.value = 1.0;
+        currentSpeed.textContent = '1.0x';
+        audio.playbackRate = 1.0;
     } else {
-        enterBackwardMode();
+        // Set speed slider to a default negative value when entering backward mode
+        speedSlider.value = -1.0;
+        currentSpeed.textContent = '-1.0x';
+        handleSpeedChange(-1.0);
     }
 }
 
@@ -671,7 +759,7 @@ speedSlider.addEventListener('input', () => {
     
     // Set new timeout to update playback rate after user stops dragging
     speedTimeout = setTimeout(() => {
-        audio.playbackRate = newSpeed;
+        handleSpeedChange(newSpeed);
     }, 100); // 100ms delay
 });
 
@@ -679,7 +767,7 @@ speedSlider.addEventListener('input', () => {
 speedSlider.addEventListener('change', () => {
     clearTimeout(speedTimeout);
     const newSpeed = parseFloat(speedSlider.value);
-    audio.playbackRate = newSpeed;
+    handleSpeedChange(newSpeed);
     currentSpeed.textContent = `${newSpeed.toFixed(1)}x`;
 });
 
@@ -702,6 +790,14 @@ maxSourcesInput.addEventListener('input', () => {
         }
     }
 });
+
+// Handle backward parameter changes
+segmentLengthInput.addEventListener('input', updateParameterDisplays);
+periodInput.addEventListener('input', updateParameterDisplays);
+stepInput.addEventListener('input', updateParameterDisplays);
+
+// Initialize parameter displays
+updateParameterDisplays();
 
 // Event listeners
 playBtn.addEventListener('click', () => {
