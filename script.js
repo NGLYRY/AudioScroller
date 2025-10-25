@@ -108,6 +108,7 @@ function handleSpeedChange(newSpeed) {
         // Enter backward mode with the calculated period
         setTimeout(() => {
             enterBackwardMode();
+            updatePlayButton();
         }, 100);
         
     } else {
@@ -435,8 +436,9 @@ async function enterBackwardMode() {
         audio.muted = false;
     }
     
-    // Update button state
+    // Update button states
     updateBackwardButton();
+    updatePlayButton();
 }
 
 // Exit backward mode
@@ -459,8 +461,9 @@ function exitBackwardMode() {
     
     console.log('Resumed forward playback at position:', virtualPosition.toFixed(2));
     
-    // Update button state
+    // Update button states
     updateBackwardButton();
+    updatePlayButton();
 }
 
 // Toggle backward mode
@@ -489,6 +492,27 @@ function updateBackwardButton() {
     } else {
         backwardBtn.classList.remove('active');
         backwardBtn.style.backgroundColor = '';
+    }
+}
+
+// Update play/pause button appearance
+function updatePlayButton() {
+    if (!playBtn) return;
+    
+    const isPlaying = (!audio.paused && !backwardMode) || (backwardMode && !manualPause);
+    
+    if (isPlaying) {
+        // Show pause button
+        musicContainer.classList.add('play');
+        playBtn.querySelector('i.fas').classList.remove('fa-play');
+        playBtn.querySelector('i.fas').classList.add('fa-pause');
+        playBtn.childNodes[0].textContent = 'Pause';
+    } else {
+        // Show play button
+        musicContainer.classList.remove('play');
+        playBtn.querySelector('i.fas').classList.add('fa-play');
+        playBtn.querySelector('i.fas').classList.remove('fa-pause');
+        playBtn.childNodes[0].textContent = 'Play';
     }
 }
 
@@ -567,26 +591,17 @@ async function playSong() {
     // Resume audio context if suspended
     await resumeAudioContext();
     
-    musicContainer.classList.add('play');
-    playBtn.querySelector('i.fas').classList.remove('fa-play');
-    playBtn.querySelector('i.fas').classList.add('fa-pause');
-    playBtn.childNodes[0].textContent = 'Pause';
-    
     manualPause = false;
     
     try {
         await audio.play();
+        updatePlayButton();
     } catch (error) {
         console.error('Failed to play audio:', error);
     }
 }
 
 function pauseSong() {
-    musicContainer.classList.remove('play');
-    playBtn.querySelector('i.fas').classList.add('fa-play');
-    playBtn.querySelector('i.fas').classList.remove('fa-pause');
-    playBtn.childNodes[0].textContent = 'Play';
-    
     manualPause = true;
     
     // Pause backward playback if active
@@ -596,6 +611,7 @@ function pauseSong() {
     }
     
     audio.pause();
+    updatePlayButton();
 }
 
 function replayLastSecond() {
@@ -653,22 +669,47 @@ function updateProgress(e) {
 }
 
 function setProgress(e) {
-    if (backwardMode) {
-        // Exit backward mode when clicking progress bar
-        exitBackwardMode();
-    }
-    
     const width = this.clientWidth;
     const clickX = e.offsetX;
     const duration = audio.duration;
     const newTime = (clickX / width) * duration;
     
+    // Update position
     audio.currentTime = newTime;
     virtualPosition = newTime;
     
-    // Automatically start playing when clicking progress bar
-    if (audio.paused) {
-        playSong();
+    // Check if speed is negative (backward mode)
+    const currentSpeed = parseFloat(speedSlider.value);
+    
+    if (currentSpeed < 0) {
+        // Speed is negative - enter backward mode
+        console.log('Progress bar clicked with negative speed, entering backward mode');
+        
+        // Exit backward mode if already active, then enter with new position
+        if (backwardMode) {
+            exitBackwardMode();
+        }
+        
+        // Update the period based on current speed and enter backward mode
+        const backwardPeriod = Math.round((dynamicBackwardParams.step / Math.abs(currentSpeed)) * 1000);
+        periodInput.value = backwardPeriod;
+        updateParameterDisplays();
+        
+        // Enter backward mode with the new position
+        setTimeout(() => {
+            enterBackwardMode();
+        }, 100);
+        
+    } else {
+        // Speed is positive - normal forward playback
+        if (backwardMode) {
+            exitBackwardMode();
+        }
+        
+        // Automatically start playing when clicking progress bar
+        if (audio.paused) {
+            playSong();
+        }
     }
 }
 
@@ -832,6 +873,7 @@ audio.addEventListener('ended', () => {
     if (backwardMode) {
         exitBackwardMode();
     }
+    updatePlayButton();
 });
 
 // Time of song
