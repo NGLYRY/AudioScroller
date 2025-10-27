@@ -85,7 +85,21 @@ function updateParameterDisplays() {
 
 // Function to handle speed changes (positive and negative)
 function handleSpeedChange(newSpeed) {
-    if (newSpeed < 0) {
+    if (newSpeed === 0) {
+        // Zero speed - pause playback
+        console.log('Zero speed detected - pausing playback');
+        
+        // Exit backward mode if active
+        if (backwardMode) {
+            exitBackwardMode();
+        }
+        
+        // Pause the audio
+        audio.pause();
+        manualPause = true;
+        updatePlayButton();
+        
+    } else if (newSpeed < 0) {
         // Negative speed - enter backward mode
         console.log('Negative speed detected:', newSpeed.toFixed(1), '- entering backward mode');
         
@@ -122,6 +136,13 @@ function handleSpeedChange(newSpeed) {
         
         // Set normal playback rate
         audio.playbackRate = newSpeed;
+        
+        // If audio was paused due to zero speed, resume playing
+        if (manualPause && audio.paused) {
+            audio.play().catch(console.error);
+            manualPause = false;
+            updatePlayButton();
+        }
     }
 }
 
