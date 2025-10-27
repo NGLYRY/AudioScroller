@@ -31,10 +31,10 @@ const progressContainer = document.getElementById('progress-container')
 const currTime = document.querySelector('#currTime');
 const durTime = document.querySelector('#durTime');
 
-const songs = ['selectedpoems_01_furlong_64kb', 'selectedpoems_02_furlong_64kb', 'selectedpoems_03_furlong_64kb', 'round.mp3'];
+const songs = ['selectedpoems_01_furlong_64kb', 'selectedpoems_02_furlong_64kb', 'selectedpoems_03_furlong_64kb', 'round.mp3', 'manwhothinks'];
 
 // Keep track of song
-let songIndex = 1;
+let songIndex = 4;
 let secIndex = 3;
 
 // Variable to track if we're in replay mode
