@@ -100,31 +100,67 @@ function handleSpeedChange(newSpeed) {
         updatePlayButton();
         
     } else if (newSpeed < 0) {
-        // Negative speed - enter backward mode
-        console.log('Negative speed detected:', newSpeed.toFixed(1), '- entering backward mode');
+        console.log('Negative speed detected:', newSpeed.toFixed(1), '- entering/updating backward mode');
         
         // Calculate backward period based on speed
-        // Formula: period = step / abs(speed)
-        // For example: -1.0x speed with 1.5s step = 1500ms period
         const backwardPeriod = Math.round((dynamicBackwardParams.step / Math.abs(newSpeed)) * 1000);
-        
-        console.log('Calculated backward period:', backwardPeriod, 'ms');
-        
-        // Update the period input and display
         periodInput.value = backwardPeriod;
         updateParameterDisplays();
-        
-        // Exit backward mode if already in it, then enter with new parameters
-        if (backwardMode) {
-            exitBackwardMode();
+
+        // If buffer isn't loaded, kick off load early to avoid decode latency
+        if (!audioBuffer && audioContext) {
+            loadAudioBuffer().catch(console.error);
         }
-        
-        // Enter backward mode with the calculated period
-        setTimeout(() => {
-            enterBackwardMode();
-            updatePlayButton();
-        }, 100);
-        
+
+        // If already in backward mode, just update the timer/period instead of exiting and re-entering.
+        if (backwardMode) {
+            // Parameters were already updated above, get the new period
+            const newPeriod = dynamicBackwardParams.period;
+            
+            // Only restart the timer if the period has changed significantly (more than 10% difference)
+            // This prevents stuttering during slider dragging
+            if (currentTimerPeriod !== null && newPeriod !== currentTimerPeriod) {
+                const periodChange = Math.abs((newPeriod - currentTimerPeriod) / currentTimerPeriod);
+                
+                // Only restart timer if period changed significantly (>10%)
+                if (periodChange > 0.1) {
+                    if (backwardTimer) {
+                        clearInterval(backwardTimer);
+                    }
+                    currentTimerPeriod = newPeriod;
+                    backwardTimer = setInterval(() => {
+                        if (!backwardMode || manualPause) return;
+                        virtualPosition = Math.max(0, virtualPosition - dynamicBackwardParams.step);
+                        playBackwardSegment(virtualPosition);
+                        updateProgressDisplay();
+                    }, newPeriod);
+                }
+            } else if (currentTimerPeriod === null || !backwardTimer) {
+                // Timer doesn't exist, create it
+                if (backwardTimer) {
+                    clearInterval(backwardTimer);
+                }
+                currentTimerPeriod = newPeriod;
+                backwardTimer = setInterval(() => {
+                    if (!backwardMode || manualPause) return;
+                    virtualPosition = Math.max(0, virtualPosition - dynamicBackwardParams.step);
+                    playBackwardSegment(virtualPosition);
+                    updateProgressDisplay();
+                }, newPeriod);
+            }
+            return;
+        }
+
+        // Not currently in backward mode — enter it after a short debounce so dragging doesn't thrash
+        if (!backwardMode) {
+            setTimeout(() => {
+                // if slider still negative, enter backward mode
+                if (parseFloat(speedSlider.value) < 0) {
+                    enterBackwardMode();
+                    updatePlayButton();
+                }
+            }, 150); // slightly longer debounce for negative -> avoids start/stop while dragging
+        }
     } else {
         // Positive speed - normal forward playback
         console.log('Positive speed detected:', newSpeed.toFixed(1), '- using normal playback');
@@ -157,6 +193,7 @@ let lastCCWTime = 0;
 
 // Backward playback variables
 let backwardTimer = null;
+let currentTimerPeriod = null; // Track the period currently used by the timer
 let lastSources = [];
 let audioBuffer = null;
 
@@ -215,24 +252,30 @@ function playSegment(startTime, duration, playbackRate = 1.0) {
     
     try {
         const source = audioContext.createBufferSource();
-        const gainNode = audioContext.createGain();
-        
+        const segmentGain = audioContext.createGain();
+
         source.buffer = audioBuffer;
         source.playbackRate.value = playbackRate;
-        
-        // Connect and start
-        source.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        // Set volume
-        gainNode.gain.value = 1.0;
-        
-        // Play the segment
-        source.start(0, startTime, duration);
+
+        // Connect with its gain node so we can apply smooth crossfades
+        source.connect(segmentGain);
+        segmentGain.connect(audioContext.destination);
+
+        const now = audioContext.currentTime;
+        const fade = Math.min(0.03, duration / 6); // 30ms or smaller fraction
+
+        // Start with gain 0, ramp up quickly to avoid clicks, then ramp down before end
+        segmentGain.gain.setValueAtTime(0, now);
+        segmentGain.gain.linearRampToValueAtTime(1.0, now + fade);
+        segmentGain.gain.setValueAtTime(1.0, now + duration - fade);
+        segmentGain.gain.linearRampToValueAtTime(0, now + duration);
+
+        // Start the source scheduled to play immediately (sample offset = startTime)
+        source.start(now, startTime, duration);
         
         const segmentData = {
             source: source,
-            gainNode: gainNode,
+            gainNode: segmentGain,
             startTime: startTime,
             duration: duration
         };
@@ -240,6 +283,10 @@ function playSegment(startTime, duration, playbackRate = 1.0) {
         // Auto-cleanup when segment ends
         source.onended = () => {
             console.log('Segment ended:', startTime.toFixed(2), 'to', (startTime + duration).toFixed(2));
+            try {
+                source.disconnect();
+                segmentGain.disconnect();
+            } catch (e) {}
         };
         
         return segmentData;
@@ -338,6 +385,7 @@ function startBackwardMode() {
         console.log('Clearing existing backward timer');
         clearInterval(backwardTimer);
         backwardTimer = null;
+        currentTimerPeriod = null;
     }
     
     // Clear any active sources
@@ -360,6 +408,7 @@ function startBackwardMode() {
     
     // Set up timer to play segments at regular intervals using dynamic parameters
     console.log('Setting up interval timer for segments every', dynamicBackwardParams.period, 'ms');
+    currentTimerPeriod = dynamicBackwardParams.period;
     backwardTimer = setInterval(() => {
         // Only add new segments if we're still in backward mode and not paused
         if (!backwardMode) {
@@ -397,6 +446,9 @@ function stopBackwardMode() {
         clearInterval(backwardTimer);
         backwardTimer = null;
     }
+    
+    // Reset timer period tracking
+    currentTimerPeriod = null;
     
     // Then stop all sources with proper cleanup
     lastSources = stopAllSources(lastSources);
