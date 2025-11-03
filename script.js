@@ -23,7 +23,7 @@ let audioSource;
 let gainNode;
 let isWebAudioConnected = false;
 
-let speed = 1.0; // Default speed
+let speed = 1.0; // Default playbackspeed
 const progress = document.getElementById('progress')
 const progressContainer = document.getElementById('progress-container')
 const currTime = document.querySelector('#currTime');
@@ -31,7 +31,7 @@ const durTime = document.querySelector('#durTime');
 
 const songs = ['selectedpoems_01_furlong_64kb', 'selectedpoems_02_furlong_64kb', 'selectedpoems_03_furlong_64kb', 'round.mp3', 'manwhothinks'];
 
-// Keep track of song
+
 let songIndex = 4;
 
 // Variable to track if we're in replay mode
@@ -183,7 +183,7 @@ let currentTimerPeriod = null; // Track the period currently used by the timer
 let lastSources = [];
 let audioBuffer = null;
 
-// Initialize Web Audio API
+// Initialize Web Audio API adn to bugfix github
 function initWebAudio() {
     try {
         // Create AudioContext only after user interaction
@@ -229,7 +229,7 @@ async function loadAudioBuffer() {
     }
 }
 
-// Play a segment of audio (for backward mode)
+// Play a segment of audio for backward mode
 function playSegment(startTime, duration, playbackRate = 1.0) {
     if (!audioBuffer || !audioContext) {
         console.error('Cannot play segment: Audio buffer or context not ready');
@@ -250,7 +250,7 @@ function playSegment(startTime, duration, playbackRate = 1.0) {
         const now = audioContext.currentTime;
         const fade = Math.min(0.03, duration / 6); // 30ms or smaller fraction
 
-        // Start with gain 0, ramp up quickly to avoid clicks, then ramp down before end
+        // Audio rounding:Start with gain 0, ramp up quickly to avoid clicks, then ramp down before end
         segmentGain.gain.setValueAtTime(0, now);
         segmentGain.gain.linearRampToValueAtTime(1.0, now + fade);
         segmentGain.gain.setValueAtTime(1.0, now + duration - fade);
@@ -266,7 +266,7 @@ function playSegment(startTime, duration, playbackRate = 1.0) {
             duration: duration
         };
         
-        // Auto-cleanup when segment ends
+        // Segment cleanup 
         source.onended = () => {
             console.log('Segment ended:', startTime.toFixed(2), 'to', (startTime + duration).toFixed(2));
             try {
@@ -300,7 +300,7 @@ function stopAllSources(sources) {
     return [];
 }
 
-// Play a backward segment
+// Play a backward segment at the right spot
 function playBackwardSegment(endPosition) {
     console.log('Playing backward segment at position:', endPosition.toFixed(2));
     
@@ -433,13 +433,11 @@ function stopBackwardMode() {
         backwardTimer = null;
     }
     
-    // Reset timer period tracking
     currentTimerPeriod = null;
     
     // Then stop all sources with proper cleanup
     lastSources = stopAllSources(lastSources);
     
-    // Reset state
     backwardMode = false;
     audio.muted = false;
     
@@ -455,7 +453,7 @@ async function enterBackwardMode() {
     
     console.log('Entering backward mode');
     
-    // Initialize Web Audio if needed
+    // Initialize Web Audio, just to make sure it's always there
     if (!audioContext) {
         const success = initWebAudio();
         if (!success) {
@@ -467,7 +465,7 @@ async function enterBackwardMode() {
     // Ensure audio context is running
     await resumeAudioContext();
     
-    // Load audio buffer if not already loaded
+    // Load audio buffer, just to make sure it's always there
     if (!audioBuffer) {
         console.log('Loading audio buffer for backward playback...');
         await loadAudioBuffer();
@@ -775,7 +773,7 @@ function setProgress(e) {
 //get duration & currentTime for Time of song
 function DurTime (e) {
     if (backwardMode) {
-        // In backward mode, we handle time display separately
+        // time display is separate from backward mode
         return;
     }
     
@@ -851,7 +849,7 @@ let speedTimeout;
 speedSlider.addEventListener('input', () => {
     const newSpeed = parseFloat(speedSlider.value);
     
-    // Update display immediately for smooth UI feedback
+    // display immediately for smooth UI feedback
     currentSpeed.textContent = `${newSpeed.toFixed(1)}x`;
     
     // Clear previous timeout
@@ -876,7 +874,7 @@ maxSourcesInput.addEventListener('input', () => {
     const newMaxSources = parseInt(maxSourcesInput.value);
     currentMaxSources.textContent = newMaxSources;
     
-    // If we're in backward mode and have too many sources, clean up immediately
+    // If in backward mode and have too many sources, clean up immediately
     if (backwardMode && lastSources.length > newMaxSources) {
         console.log(`Reducing active sources from ${lastSources.length} to ${newMaxSources}`);
         while (lastSources.length > newMaxSources) {
@@ -899,7 +897,7 @@ stepInput.addEventListener('input', updateParameterDisplays);
 // Initialize parameter displays
 updateParameterDisplays();
 
-// Event listeners
+// Event listeners for play button
 playBtn.addEventListener('click', () => {
   const currentSpeedVal = parseFloat(speedSlider.value);
   const isPlaying = (!audio.paused && !backwardMode) || (backwardMode && !manualPause);
@@ -927,17 +925,14 @@ playBtn.addEventListener('click', () => {
   }
 });
 
-// Add event listener for replay button
+// replay last second button
 replaySecondBtn.addEventListener('click', replayLastSecond);
 
-// Add event listener for backward button
-if (backwardBtn) {
-    backwardBtn.addEventListener('click', toggleBackwardMode);
-} else {
-    console.warn('Backward button not found - make sure to add <button id="backward">Backward</button> to your HTML');
-}
+// 1x backward button
+backwardBtn.addEventListener('click', toggleBackwardMode);
 
-// Time/song update
+
+// time/song update
 audio.addEventListener('timeupdate', updateProgress);
 
 // Click on progress bar
@@ -955,16 +950,16 @@ audio.addEventListener('ended', () => {
 // Time of song
 audio.addEventListener('timeupdate', DurTime);
 
-// Add this function to handle initial user interaction
+// Handles initial user interaction
 function handleFirstInteraction() {
     if (!audioContext) {
         initWebAudio();
     }
-    // Remove the event listeners after first interaction
+    // remove event listeners after first interaction
     document.removeEventListener('click', handleFirstInteraction);
     document.removeEventListener('keydown', handleFirstInteraction);
 }
 
-// Add event listeners for first user interaction
+// event listeners for first user interaction
 document.addEventListener('click', handleFirstInteraction);
 document.addEventListener('keydown', handleFirstInteraction);
