@@ -1,5 +1,3 @@
-console.log("script.js works hooray!");
-
 const musicContainer = document.getElementById('music-container')
 const playBtn = document.getElementById('play')
 const replaySecondBtn = document.getElementById('replaySecond')
@@ -35,20 +33,12 @@ const songs = ['selectedpoems_01_furlong_64kb', 'selectedpoems_02_furlong_64kb',
 
 // Keep track of song
 let songIndex = 4;
-let secIndex = 3;
 
 // Variable to track if we're in replay mode
 let isReplayingSecond = false;
 let replayTimeout;
 
 // ===== BACKWARD PLAYBACK SYSTEM =====
-// Configuration
-const BackwardConfig = {
-    MIN_SPEED: 0.1,
-    MAX_SPEED: 4.0,
-    MAX_ACTIVE_SOURCES: 3
-};
-
 // Dynamic backward parameters
 let dynamicBackwardParams = {
     segmentDuration: 2.0,
@@ -183,13 +173,9 @@ function handleSpeedChange(newSpeed) {
 }
 
 // Backward playback state
-let accumulatedScroll = 0.0;
-let currentVirtualSpeed = 1.0;
 let manualPause = false;
 let backwardMode = false;
-let clickBoostActive = false;
 let virtualPosition = 0;
-let lastCCWTime = 0;
 
 // Backward playback variables
 let backwardTimer = null;
@@ -965,12 +951,3 @@ function handleFirstInteraction() {
 // Add event listeners for first user interaction
 document.addEventListener('click', handleFirstInteraction);
 document.addEventListener('keydown', handleFirstInteraction);
-
-// Add debugging information
-console.log('Current protocol:', window.location.protocol);
-console.log('AudioContext support:', !!(window.AudioContext || window.webkitAudioContext));
-
-// Check if running on GitHub Pages
-if (window.location.hostname.includes('github.io')) {
-    console.log('Running on GitHub Pages');
-}
