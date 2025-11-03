@@ -39,7 +39,7 @@ let isReplayingSecond = false;
 let replayTimeout;
 
 // ===== BACKWARD PLAYBACK SYSTEM =====
-// Dynamic backward parameters
+// Backward parameters
 let dynamicBackwardParams = {
     segmentDuration: 2.0,
     period: 1500,
@@ -357,7 +357,7 @@ function startBackwardMode() {
     
     // Ensure audio context is ready
     if (!audioContext || audioContext.state === 'suspended') {
-        console.log('Audio context not ready, attempting to resume...');
+        console.log('Audio context not ready, attempting to resume');
         resumeAudioContext().then(() => {
             if (backwardMode) {
                 setTimeout(() => startBackwardMode(), 100);
@@ -901,11 +901,28 @@ updateParameterDisplays();
 
 // Event listeners
 playBtn.addEventListener('click', () => {
-  const isPlaying = musicContainer.classList.contains('play');
+  const currentSpeedVal = parseFloat(speedSlider.value);
+  const isPlaying = (!audio.paused && !backwardMode) || (backwardMode && !manualPause);
 
   if (isPlaying) {
+    // If currently playing in either mode, pause
+    pauseSong();
+    return;
+  }
+
+  if (currentSpeedVal < 0) {
+    // Negative speed: play in backward mode
+    if (!backwardMode) {
+      enterBackwardMode();
+    } else {
+      manualPause = false;
+    }
+    updatePlayButton();
+  } else if (currentSpeedVal === 0) {
+    // Zero speed: remain paused
     pauseSong();
   } else {
+    // Positive speed: normal forward play
     playSong();
   }
 });
