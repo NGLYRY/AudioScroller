@@ -183,7 +183,7 @@ let currentTimerPeriod = null; // Track the period currently used by the timer
 let lastSources = [];
 let audioBuffer = null;
 
-// Initialize Web Audio API adn to bugfix github
+// Initialize Web Audio API and to bugfix github
 function initWebAudio() {
     try {
         // Create AudioContext only after user interaction
