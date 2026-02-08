@@ -23,7 +23,6 @@ const wordPlayer = document.getElementById('wordPlayer');
 const keywordDisplay = document.getElementById('keywordDisplay');
 const scrubStatus = document.getElementById('scrubStatus');
 const fileInput = document.getElementById('audioFile');
-const pauseSmartScrubBtn = document.getElementById('pauseSmartScrub');
 const thresholdSlider = document.getElementById('thresholdSlider');
 const thresholdLabel = document.getElementById('thresholdLabel');
 const intervalSlider = document.getElementById('intervalSlider');
@@ -636,9 +635,20 @@ function updateBackwardButton() {
 // Update play/pause button appearance
 function updatePlayButton() {
     if (!playBtn) return;
-    
-    const isPlaying = (!audio.paused && !backwardMode) || (backwardMode && !manualPause);
-    
+
+    // Check if in smart scrub mode (forward or backward)
+    const inSmartScrubMode = (smartScrubTimer !== null || backwardSmartScrubTimer !== null);
+
+    // Determine if playing based on mode
+    let isPlaying;
+    if (inSmartScrubMode) {
+        // In smart scrub mode, playing if not paused
+        isPlaying = !isSmartScrubPaused;
+    } else {
+        // Normal or backward mode
+        isPlaying = (!audio.paused && !backwardMode) || (backwardMode && !manualPause);
+    }
+
     if (isPlaying) {
         // Show pause button
         musicContainer.classList.add('play');
@@ -1157,9 +1167,7 @@ function startSmartScrub() {
     }
     initWordPlayerPool();
 
-    pauseSmartScrubBtn.style.display = 'inline-block';
     isSmartScrubPaused = false;
-    pauseSmartScrubBtn.textContent = "Pause Smart Scrub";
 
     const getIntervalMs = () => {
         if (userIntervalMs !== null) return userIntervalMs;
@@ -1211,6 +1219,8 @@ function startSmartScrub() {
         nextWordIndex++;
         lastPlayTime = now + wordDurationMs + gapMs - overlapMs;
     }, 50);
+
+    updatePlayButton();
 }
 
 function stopSmartScrub(options = {}) {
@@ -1219,7 +1229,6 @@ function stopSmartScrub(options = {}) {
     smartScrubTimer = null;
     keywordDisplay.textContent = "";
     isSmartScrubPaused = false;
-    pauseSmartScrubBtn.style.display = 'none';
     stopSmartSegment(8);
     if (audioContext && gainNode) {
         gainNode.gain.cancelScheduledValues(audioContext.currentTime);
@@ -1230,25 +1239,8 @@ function stopSmartScrub(options = {}) {
     if (resumeAudio && audio.paused) {
         audio.play().catch(() => {});
     }
+    updatePlayButton();
 }
-
-// Pause smart scrub button
-pauseSmartScrubBtn.onclick = () => {
-    if (isSmartScrubPaused) {
-        isSmartScrubPaused = false;
-        pauseSmartScrubBtn.textContent = "Pause Smart Scrub";
-    } else {
-        isSmartScrubPaused = true;
-        pauseSmartScrubBtn.textContent = "Resume Smart Scrub";
-        audio.pause();
-        stopSmartSegment(8);
-        if (audioContext && gainNode) {
-            gainNode.gain.cancelScheduledValues(audioContext.currentTime);
-            gainNode.gain.setValueAtTime(gainNode.gain.value, audioContext.currentTime);
-            gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.01);
-        }
-    }
-};
 
 // Smart scrub parameter slider handlers
 thresholdSlider.oninput = () => {
@@ -1332,9 +1324,7 @@ function startBackwardSmartScrub() {
     }
     initWordPlayerPool();
 
-    pauseSmartScrubBtn.style.display = 'inline-block';
     isSmartScrubPaused = false;
-    pauseSmartScrubBtn.textContent = "Pause Smart Scrub";
 
     // Recalc informative words using absolute speed
     const absSpeed = Math.abs(speed);
@@ -1397,6 +1387,8 @@ function startBackwardSmartScrub() {
         bwNextWordIndex--; // Step backward through word list
         lastPlayTime = now + wordDurationMs + gapMs - overlapMs;
     }, 50);
+
+    updatePlayButton();
 }
 
 function stopBackwardSmartScrub() {
@@ -1404,7 +1396,6 @@ function stopBackwardSmartScrub() {
     backwardSmartScrubTimer = null;
     keywordDisplay.textContent = "";
     isSmartScrubPaused = false;
-    pauseSmartScrubBtn.style.display = 'none';
     stopSmartSegment(8);
     if (audioContext && gainNode) {
         gainNode.gain.cancelScheduledValues(audioContext.currentTime);
@@ -1412,6 +1403,7 @@ function stopBackwardSmartScrub() {
         gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.01);
     }
     audio.muted = false;
+    updatePlayButton();
 }
 
 // Backward smart scrub start speed slider handler
@@ -1830,6 +1822,30 @@ updateParameterDisplays();
 
 // Event listeners for play button
 playBtn.addEventListener('click', () => {
+  // Check if in smart scrub mode (forward or backward)
+  const inSmartScrubMode = (smartScrubTimer !== null || backwardSmartScrubTimer !== null);
+
+  if (inSmartScrubMode) {
+    // Handle smart scrub pause/resume
+    if (isSmartScrubPaused) {
+      // Resume smart scrub
+      isSmartScrubPaused = false;
+    } else {
+      // Pause smart scrub
+      isSmartScrubPaused = true;
+      audio.pause();
+      stopSmartSegment(8);
+      if (audioContext && gainNode) {
+        gainNode.gain.cancelScheduledValues(audioContext.currentTime);
+        gainNode.gain.setValueAtTime(gainNode.gain.value, audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(1, audioContext.currentTime + 0.01);
+      }
+    }
+    updatePlayButton();
+    return;
+  }
+
+  // Normal play/pause logic (not in smart scrub mode)
   const currentSpeedVal = parseFloat(speedSlider.value);
   const isPlaying = (!audio.paused && !backwardMode) || (backwardMode && !manualPause);
 
