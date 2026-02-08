@@ -118,3 +118,50 @@
   color: #007bff;
   font-weight: bold;
 }
+
+.smart-scrub-params {
+  margin: 15px 0;
+  padding: 15px;
+  background-color: #f5f0ff;
+  border-radius: 8px;
+  border: 1px solid #d0c0e0;
+  font-family: 'Lato', sans-serif;
+}
+
+.smart-scrub-params h3 {
+  margin: 0 0 15px 0;
+  color: #333;
+  font-size: 16px;
+  text-align: center;
+}
+
+.keyword-display {
+  margin-top: 20px;
+  font-size: 1.6em;
+  color: #ffd500;
+  text-align: center;
+  font-family: 'Lato', sans-serif;
+  min-height: 1.8em;
+}
+
+.scrub-status {
+  margin-top: 10px;
+  font-style: italic;
+  text-align: center;
+  font-family: 'Lato', sans-serif;
+  font-size: 14px;
+  color: #666;
+}
+
+.file-upload {
+  margin: 15px 0;
+  text-align: center;
+  font-family: 'Lato', sans-serif;
+  font-size: 14px;
+  color: #333;
+}
+
+.file-upload label {
+  margin-right: 8px;
+  font-weight: bold;
+}

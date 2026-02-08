@@ -20,13 +20,14 @@
         </div>
 
         <audio id="audio" src="mp3s/selectedpoems_01_furlong_64kb.mp3"></audio>
+        <audio id="wordPlayer" style="display: none;" src="mp3s/selectedpoems_01_furlong_64kb.mp3"></audio>
 
         <!-- <audio id="repeat" src="mp3s/selectedpoems_01_furlong_64kb.mp3" loop controls></audio> -->
 
 
         <div class="speed-control">
             <label for="speedSlider">Speed: <span id="currentSpeed">1.0x</span></label>
-            <input type="range" id="speedSlider" min="-3.0" max="3.0" value="1.0" step="0.1">
+            <input type="range" id="speedSlider" min="-6.0" max="6.0" value="1.0" step="0.1">
         </div>
 
         <div class="backward-control">
@@ -53,6 +54,34 @@
             </div>
         </div>
 
+        <div class="smart-scrub-params">
+            <h3>Smart Scrub Parameters</h3>
+            <div class="param-group">
+                <label for="thresholdSlider">Semantic Threshold: <span id="thresholdLabel">50th percentile</span></label>
+                <input type="range" id="thresholdSlider" min="50" max="95" step="1" value="80">
+            </div>
+            <div class="param-group">
+                <label for="intervalSlider">Word Interval: <span id="intervalLabel">0ms</span></label>
+                <input type="range" id="intervalSlider" min="0" max="1000" step="50" value="0">
+            </div>
+            <div class="param-group">
+                <label for="wordSpeedSlider">Word Playback Speed: <span id="wordSpeedLabel">1.0x</span></label>
+                <input type="range" id="wordSpeedSlider" min="0.5" max="2" step="0.1" value="1">
+            </div>
+            <div class="param-group">
+                <label for="overlapSourcesSlider">Overlap Sources: <span id="overlapSourcesLabel">3</span></label>
+                <input type="range" id="overlapSourcesSlider" min="1" max="4" step="1" value="3">
+            </div>
+            <div class="param-group">
+                <label for="scrubStartSpeedSlider">Smart Scrub Start Speed: <span id="scrubStartSpeedLabel">2.0x</span></label>
+                <input type="range" id="scrubStartSpeedSlider" min="1.5" max="6" step="0.1" value="2">
+            </div>
+            <div class="param-group">
+                <label for="bwScrubStartSpeedSlider">Backward Smart Scrub Start Speed: <span id="bwScrubStartSpeedLabel">-2.0x</span></label>
+                <input type="range" id="bwScrubStartSpeedSlider" min="1.5" max="6" step="0.1" value="2">
+            </div>
+        </div>
+
         <div class="navigation">
             <button id="play" class="action-btn action-btn-big">
                 Play<i class="fas fa-play"></i>
@@ -61,6 +90,15 @@
                 Replay 1s
             </button>
             <button id="backward" title="Backward Playback" class="action-btn">Backward</button>
+            <button id="pauseSmartScrub" style="display:none;" class="action-btn">Pause Smart Scrub</button>
+        </div>
+
+        <div id="keywordDisplay" class="keyword-display"></div>
+        <div id="scrubStatus" class="scrub-status"></div>
+
+        <div class="file-upload">
+            <label for="audioFile">Upload Audio:</label>
+            <input type="file" id="audioFile" accept="audio/*">
         </div>
     </div>
 
@@ -71,6 +109,7 @@
         With the parameters of peiod fitting to the steps parameter.
     </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
